@@ -1,0 +1,61 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
+            "type": "java",
+            "name": "Launch Current File",
+            "request": "launch",
+            "mainClass": "${file}"
+        },
+        {
+            "type": "java",
+            "name": "Launch Hydra SMT",
+            "request": "launch",
+            "args": [
+                "smt",
+                "benchmarks/ipc2020/total-order/Childsnack/domain.hddl",
+                "benchmarks/ipc2020/total-order/Childsnack/p01.hddl"
+            ],
+
+            "mainClass": "treerex.hydra.Hydra",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "Launch Hydra CSP",
+            "request": "launch",
+            "args": [
+                "csp",
+                "benchmarks/ipc2020/total-order/Transport/domain.hddl",
+                "benchmarks/ipc2020/total-order/Transport/pfile01.hddl"
+            ],
+
+            "mainClass": "treerex.hydra.Hydra",
+            "projectName": "app"
+        },
+        {
+            "type": "java",
+            "name": "Launch Hydra SAT",
+            "request": "launch",
+            "args": [
+                "sat",
+                "benchmarks/ipc2020/total-order/Childsnack/domain.hddl",
+                "benchmarks/ipc2020/total-order/Childsnack/p01.hddl"
+            ],
+
+            "mainClass": "treerex.hydra.HydraApp",
+            "projectName": "app"
+        }
+    ]
+}

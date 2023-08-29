@@ -1,0 +1,170 @@
+(define (domain prob-snack)
+(:requirements :strips :negative-preconditions :hierarchy :typing :method-preconditions)
+(:types 
+  tray - OBJECT
+  bread-portion - OBJECT
+  content-portion - OBJECT
+  sandwich - OBJECT
+  place - OBJECT
+  child - OBJECT
+)
+(:constants 
+  kitchen - place
+)
+(:predicates 
+  (at_kitchen_bread ?b - bread-portion)
+  (at_kitchen_content ?c - content-portion)
+  (at_kitchen_sandwich ?s - sandwich)
+  (no_gluten_bread ?b - bread-portion)
+  (no_gluten_content ?c - content-portion)
+  (ontray ?s - sandwich ?t - tray)
+  (no_gluten_sandwich ?s - sandwich)
+  (allergic_gluten ?c - child)
+  (not_allergic_gluten ?c - child)
+  (served ?c - child)
+  (waiting ?c - child ?p - place)
+  (at ?t - tray ?p - place)
+  (notexist ?s - sandwich)
+)
+(:task serve
+  :parameters (?c - child) )
+
+(:action make_sandwich_no_gluten
+  :parameters (?s - sandwich ?b - bread-portion ?c - content-portion)
+  :precondition 
+  (and (at_kitchen_bread ?b)
+    (at_kitchen_content ?c)
+    (no_gluten_bread ?b)
+    (no_gluten_content ?c)
+    (notexist ?s))
+  :effect 
+  (and (not (at_kitchen_bread ?b))
+    (not (at_kitchen_content ?c))
+    (at_kitchen_sandwich ?s)
+    (no_gluten_sandwich ?s)
+    (not (notexist ?s)))
+)
+(:action make_sandwich
+  :parameters (?s - sandwich ?b - bread-portion ?c - content-portion)
+  :precondition 
+  (and (at_kitchen_bread ?b)
+    (at_kitchen_content ?c)
+    (notexist ?s))
+  :effect 
+  (and (not (at_kitchen_bread ?b))
+    (not (at_kitchen_content ?c))
+    (at_kitchen_sandwich ?s)
+    (not (notexist ?s)))
+)
+(:action put_on_tray
+  :parameters (?s - sandwich ?t - tray)
+  :precondition 
+  (and (at_kitchen_sandwich ?s)
+    (at ?t kitchen))
+  :effect 
+  (and (not (at_kitchen_sandwich ?s))
+    (ontray ?s ?t))
+)
+(:action serve_sandwich_no_gluten
+  :parameters (?s - sandwich ?c - child ?t - tray ?p - place)
+  :precondition 
+  (and (allergic_gluten ?c)
+    (ontray ?s ?t)
+    (waiting ?c ?p)
+    (no_gluten_sandwich ?s)
+    (at ?t ?p))
+  :effect 
+  (and (not (ontray ?s ?t))
+    (served ?c))
+)
+(:action serve_sandwich
+  :parameters (?s - sandwich ?c - child ?t - tray ?p - place)
+  :precondition 
+  (and (not_allergic_gluten ?c)
+    (waiting ?c ?p)
+    (ontray ?s ?t)
+    (at ?t ?p))
+  :effect 
+  (and (not (ontray ?s ?t))
+    (served ?c))
+)
+(:action move_tray
+  :parameters (?t - tray ?p1 - place ?p2 - place)
+  :precondition 
+  (and (at ?t ?p1))
+  :effect 
+  (and (not (at ?t ?p1))
+    (at ?t ?p2))
+)
+(:action nop
+  :parameters ()
+  :precondition 
+  ()
+  :effect 
+  ()
+)
+(:action Macro-m1_serve__0-4___make_sandwich__put_on_tray__move_tray__serve_sandwich__move_tray
+  :parameters (?s - sandwich ?b - bread-portion ?cont - content-portion ?t - tray ?p2 - place ?c - child)
+  :precondition 
+  (and (at_kitchen_bread ?b)
+    (at_kitchen_content ?cont)
+    (notexist ?s)
+    (at ?t kitchen)
+    (not_allergic_gluten ?c)
+    (waiting ?c ?p2))
+  :effect 
+  (and (served ?c)
+    (at ?t kitchen)
+    (not (at_kitchen_bread ?b))
+    (not (at_kitchen_content ?cont))
+    (not (notexist ?s))
+    (not (at_kitchen_sandwich ?s))
+    (not (ontray ?s ?t))
+    (not (at ?t ?p2)))
+)
+(:action Macro-m0_serve__0-4___make_sandwich_no_gluten__put_on_tray__move_tray__serve_sandwich_no_gluten__move_tray
+  :parameters (?s - sandwich ?b - bread-portion ?cont - content-portion ?t - tray ?p2 - place ?c - child)
+  :precondition 
+  (and (at_kitchen_bread ?b)
+    (at_kitchen_content ?cont)
+    (no_gluten_bread ?b)
+    (no_gluten_content ?cont)
+    (notexist ?s)
+    (at ?t kitchen)
+    (allergic_gluten ?c)
+    (waiting ?c ?p2))
+  :effect 
+  (and (no_gluten_sandwich ?s)
+    (served ?c)
+    (at ?t kitchen)
+    (not (at_kitchen_bread ?b))
+    (not (at_kitchen_content ?cont))
+    (not (notexist ?s))
+    (not (at_kitchen_sandwich ?s))
+    (not (ontray ?s ?t))
+    (not (at ?t ?p2)))
+)
+(:method m0_serve
+  :parameters (?c - child ?s - sandwich ?b - bread-portion ?cont - content-portion ?t - tray ?p2 - place)
+  :task (serve ?c)
+  :precondition
+  (and (allergic_gluten ?c)
+    (notexist ?s)
+    (waiting ?c ?p2)
+    (no_gluten_bread ?b)
+    (no_gluten_content ?cont))
+  :ordered-subtasks
+  (and (t1 (Macro-m0_serve__0-4___make_sandwich_no_gluten__put_on_tray__move_tray__serve_sandwich_no_gluten__move_tray ?s ?b ?cont ?t ?p2 ?c))
+))
+(:method m1_serve
+  :parameters (?c - child ?s - sandwich ?b - bread-portion ?cont - content-portion ?t - tray ?p2 - place)
+  :task (serve ?c)
+  :precondition
+  (and (not_allergic_gluten ?c)
+    (notexist ?s)
+    (waiting ?c ?p2)
+    (not (no_gluten_bread ?b))
+    (not (no_gluten_content ?cont)))
+  :ordered-subtasks
+  (and (t1 (Macro-m1_serve__0-4___make_sandwich__put_on_tray__move_tray__serve_sandwich__move_tray ?s ?b ?cont ?t ?p2 ?c))))
+)

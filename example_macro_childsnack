@@ -1,0 +1,84 @@
+
+
+make_sandwich:
+
+precondition:   (at_kitchen_bread ?b) (at_kitchen_content ?c) (notexist ?s)
+del effects:    (not (at_kitchen_bread ?b)) (not (at_kitchen_content ?c)) (not (notexist ?s))
+add effects:    (at_kitchen_sandwich ?s)  
+
+
+
+make_sandwich__put_on_tray:
+
+precondition:   (at_kitchen_bread ?b) (at_kitchen_content ?c) (notexist ?s) (at ?t kitchen)
+del effects:    (not (at_kitchen_sandwich ?s)) (not (at_kitchen_bread ?b)) (not (at_kitchen_content ?c)) (not (notexist ?s))
+add effects:    (ontray ?s ?t) 
+
+
+
+make_sandwich__put_on_tray__move_tray:
+
+precondition:   (at_kitchen_bread ?b) (at_kitchen_content ?c) (notexist ?s) (at ?t kitchen)
+del effects:    (not (at ?t ?p1)) (not (at_kitchen_sandwich ?s)) (not (at_kitchen_bread ?b)) (not (at_kitchen_content ?c)) (not (notexist ?s))
+add effects:    (at ?t ?p2) (ontray ?s ?t)
+
+
+make_sandwich__put_on_tray__move_tray__serve_sandiwich
+
+precondition:   (at_kitchen_bread ?b) (at_kitchen_content ?c) (notexist ?s) (at ?t kitchen) (not_allergic_gluten ?c) (waiting ?c ?p)
+del effects:    (not (ontray ?s ?t)) (not (at ?t ?p1)) (not (at_kitchen_sandwich ?s)) (not (at_kitchen_bread ?b)) (not (at_kitchen_content ?c)) (not (notexist ?s))
+add effects:    (served ?c) (at ?t ?p2)
+
+
+make_sandwich__put_on_tray__move_tray__serve_sandiwich__move_tray
+
+precondition:   (at_kitchen_bread ?b) (at_kitchen_content ?c) (notexist ?s) (at ?t kitchen) (not_allergic_gluten ?c) (waiting ?c ?p)
+del effects:    (not (ontray ?s ?t)) (not (at_kitchen_sandwich ?s)) (not (at_kitchen_bread ?b)) (not (at_kitchen_content ?c)) (not (notexist ?s))
+add effects:    (served ?c) (at ?t ?p2)
+
+
+
+method
+ParsedMethod@8 "(:method m1_serve
+  :parameters (?c - CHILD ?s - SANDWICH ?b - BREAD-PORTION ?cont - CONTENT-PORTION ?t - TRAY ?p2 - PLACE)
+  :task (serve ?c)
+  :precondition
+  (and (not_allergic_gluten ?c)
+    (notexist ?s)
+    (waiting ?c ?p2)
+    (not (no_gluten_bread ?b))
+    (not (no_gluten_content ?cont)))
+  :ordered-subtasks
+  (and (make_sandwich t1 (?s ?b ?cont)
+    (put_on_tray t2 (?s ?t)
+    (move_tray t3 (?t kitchen ?p2)
+    (serve_sandwich t4 (?s ?c ?t ?p2)
+    (move_tray t5 (?t ?p2 kitchen))
+)"
+method.getSubTasks()
+Expression@55 "(and (make_sandwich t1 (?s ?b ?cont)
+  (put_on_tray t2 (?s ?t)
+  (move_tray t3 (?t kitchen ?p2)
+  (serve_sandwich t4 (?s ?c ?t ?p2)
+  (move_tray t5 (?t ?p2 kitchen))"
+arguments: ArrayList@57 size=0
+children: ArrayList@58 size=5
+0: Expression@67 "(make_sandwich t1 (?s ?b ?cont)"
+1: Expression@68
+2: Expression@69
+3: Expression@70
+4: Expression@71
+connector: Connector@59
+isPrimtive: false
+location: Location@60
+prefName: null
+quantifiedVariables: ArrayList@61 size=0
+symbol: null
+taskID: null
+timeSpecifier: null
+value: null
+variable: null
+method.getSubTasks().get(0)
+Cannot evaluate because of compilation error(s): The method get(int) is undefined for the type Expression<String>.
+method.getSubTasks().getChildren().get(0)
+Expression@67 "(make_sandwich t1 (?s ?b ?cont)"
