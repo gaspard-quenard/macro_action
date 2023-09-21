@@ -81,7 +81,7 @@ public class Hydra {
                 if (args[i].equalsIgnoreCase(solverConf.name())) {
                     solverConfigs.add(solverConf);                
                 }
-            }
+            } 
         }
 
         try {
@@ -163,7 +163,7 @@ public class Hydra {
                             LOGGER.info("Found consecutive primitive tasks in method " + method.getName() + " from " + idxFirstPrimitiveTask + " to " + idxLastPrimitiveTask + "\n");
                             mapMethodsToMacroPossible.get(method).add(new int[] {idxFirstPrimitiveTask, idxLastPrimitiveTask});
                             atLeastOneMethodContainsConsecutiveActions = true;
-                            break;
+                            // break;
                         } 
                         // Reset the indexes
                         idxFirstPrimitiveTask = -1;
@@ -189,6 +189,12 @@ public class Hydra {
 
                     // Launch the function that will create the macro actions
                     createMacroActions(method, idxs[0], idxs[1], parsedProblem);
+                    // Now, substract idxs[1] - idxs[0] to all the indexes of the other consecutive primitive tasks with the same method
+                    int numberOfConsecutivePrimitiveTasksToSubstract = idxs[1] - idxs[0];
+                    for (int[] idxs2 : mapMethodsToMacroPossible.get(method)) {
+                        idxs2[0] -= numberOfConsecutivePrimitiveTasksToSubstract;
+                        idxs2[1] -= numberOfConsecutivePrimitiveTasksToSubstract;
+                    }
                     LOGGER.info("------------------------------------------------\n");
                 }
             }
@@ -200,6 +206,7 @@ public class Hydra {
 
             // Write the new domain file
             String newDomainPath = args[1].substring(0, args[1].lastIndexOf("/")) + "/newDomain.hddl";
+
             LOGGER.info("Write the new domain file at: " + newDomainPath + "\n");
 
             File file = new File(newDomainPath);
@@ -212,6 +219,7 @@ public class Hydra {
             writer.write(newDomainFile);
             writer.flush();
             writer.close();
+
 
         // This exception could happen if the domain or the problem does not exist
         } catch (Throwable t) {
@@ -314,7 +322,8 @@ public class Hydra {
 
 
         // Use a general function to remove the effects that are already in the precondition (function with general name to indicate that we remove all the element of the first list that are in the second list)
-        // macroActionAddEffects = filterBy(macroActionAddEffects, macroActionPreconditions);
+        macroActionAddEffects = filterBy(macroActionAddEffects, macroActionPreconditions);
+        macroActionDelEffects = filterBy(macroActionDelEffects, macroActionPreconditions);
 
         // Fusion the add and del effects
         Expression<String> macroActionEffects = new Expression<String>(macroActionAddEffects);
@@ -341,11 +350,11 @@ public class Hydra {
         expressionMacro.setSymbol(symbolMacroActionName);
         List<Symbol<String>> macroActionParametersForMethod = new ArrayList<Symbol<String>>();
         for (TypedSymbol<String> param : macroAction.getParameters()) {
-            macroActionParametersForMethod.add(param);
+            Symbol<String> newParam = new Symbol<String>(param);
+            macroActionParametersForMethod.add(newParam);
         }
         expressionMacro.setArguments(macroActionParametersForMethod);
         expressionMacro.setConnector(Connector.TASK);
-        // expressionMacro.setLocation(new Location(25, 28, 56, 28));
         expressionMacro.setTaskID(new Symbol<String>(SymbolType.TASK_ID, "t" + (idxFirstPrimitiveTask + 1)));
 
         newSubtasks.addChild(expressionMacro);
@@ -354,7 +363,7 @@ public class Hydra {
         for (int i = idxLastPrimitiveTask+1; i < method.getSubTasks().getChildren().size(); i++) {
             Expression<String> subtask = method.getSubTasks().getChildren().get(i);
             // We have to change the taks id since we have removed some subtasks
-            subtask.setTaskID(new Symbol<String>(SymbolType.TASK_ID, "t" + (i - (idxLastPrimitiveTask - idxFirstPrimitiveTask))));
+            subtask.setTaskID(new Symbol<String>(SymbolType.TASK_ID, "t" + ((i+1) - (idxLastPrimitiveTask - idxFirstPrimitiveTask))));
             newSubtasks.addChild(subtask);
         }
 
@@ -686,16 +695,23 @@ public class Hydra {
         return false;
     }
 
-    // public Expression<String> filterBy(Expression<String> expressionToFilter, Expression<String> filter) {
+    public Expression<String> filterBy(Expression<String> expressionToFilter, Expression<String> filter) {
 
-    //     Expression<String> newExpression = new Expression<String>(expression);
+        Expression<String> newExpression = new Expression<String>(expressionToFilter);
 
-    //     for (Expression<String> element : expression.getChildren()) {
+        for (Expression<String> element : expressionToFilter.getChildren()) {
+
+            for (Expression<String> filterElement : filter.getChildren()) {
+
+                // If this element is equal of an element in the filter, remove it
+                if (element.equals(filterElement)) {
+                    newExpression.getChildren().remove(element);
+                    break;
+                }
+            }
             
-    //         // If this element is in the filter, remove it
-    //         if (el)
-    //     }
+        }
 
-    //     return newExpression;
-    // }
+        return newExpression;
+    }
 }
