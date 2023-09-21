@@ -17,7 +17,6 @@ import fr.uga.pddl4j.parser.Connector;
 import fr.uga.pddl4j.parser.DefaultParsedProblem;
 import fr.uga.pddl4j.parser.ErrorManager;
 import fr.uga.pddl4j.parser.Expression;
-import fr.uga.pddl4j.parser.Location;
 import fr.uga.pddl4j.parser.Message;
 import fr.uga.pddl4j.parser.ParsedAction;
 import fr.uga.pddl4j.parser.ParsedMethod;
@@ -104,6 +103,8 @@ public class Hydra {
                 }
             }
 
+            boolean atLeastOneMethodContainsConsecutiveActions = false;
+
             HashSet<String> primitiveTasks = new HashSet<String>();
             parsedActionNameToObj = new HashMap<String, ParsedAction>();
             for (ParsedAction parsedAction : parsedProblem.getActions()) {
@@ -117,9 +118,12 @@ public class Hydra {
             // Create a dictionary with in key the name of the method and in value an array of double where the first value is the index of the first primitive task and the second value is the index of the last primitive task
             HashMap<ParsedMethod , ArrayList<int[]>> mapMethodsToMacroPossible = new HashMap<ParsedMethod , ArrayList<int[]>>();
 
-            // Ok, now iterate all methods and check if there are consecutives action within the subtask of a method
-            for (ParsedMethod method : parsedProblem.getMethods()) {
-                LOGGER.info("Analyze method: " + method.getName() + "\n");
+            // Ok, now iterate all methods and check if there are consecutives actions within the subtask of a method
+            for (int idxMethod = 0; idxMethod < parsedProblem.getMethods().size(); idxMethod++) {
+
+                ParsedMethod method = parsedProblem.getMethods().get(idxMethod);
+            // for (ParsedMethod method : parsedProblem.getMethods()) {
+                LOGGER.info("Analyze method: " + (idxMethod+1) + "/" + parsedProblem.getMethods().size() + ": " + method.getName() + "\n");
                 
                 // Iterate all subtasks of the method
                 int idxFirstPrimitiveTask = -1;
@@ -158,12 +162,25 @@ public class Hydra {
                             // There were consecutive primitive tasks, add them to the map
                             LOGGER.info("Found consecutive primitive tasks in method " + method.getName() + " from " + idxFirstPrimitiveTask + " to " + idxLastPrimitiveTask + "\n");
                             mapMethodsToMacroPossible.get(method).add(new int[] {idxFirstPrimitiveTask, idxLastPrimitiveTask});
+                            atLeastOneMethodContainsConsecutiveActions = true;
                             break;
-                        }
+                        } 
+                        // Reset the indexes
+                        idxFirstPrimitiveTask = -1;
+                        idxLastPrimitiveTask = -1;
                     }
                 }
                 int a = 0;
             }
+
+
+            LOGGER.info("===========================\n");
+
+            if (!atLeastOneMethodContainsConsecutiveActions) {
+                LOGGER.info("No method contains consecutive primitive tasks, no need to create macro actions\n");
+                return;
+            }
+
 
             // Now iterate our dictionnary 
             for (ParsedMethod method : mapMethodsToMacroPossible.keySet()) {
@@ -172,6 +189,7 @@ public class Hydra {
 
                     // Launch the function that will create the macro actions
                     createMacroActions(method, idxs[0], idxs[1], parsedProblem);
+                    LOGGER.info("------------------------------------------------\n");
                 }
             }
 
@@ -182,6 +200,7 @@ public class Hydra {
 
             // Write the new domain file
             String newDomainPath = args[1].substring(0, args[1].lastIndexOf("/")) + "/newDomain.hddl";
+            LOGGER.info("Write the new domain file at: " + newDomainPath + "\n");
 
             File file = new File(newDomainPath);
 
@@ -194,103 +213,12 @@ public class Hydra {
             writer.flush();
             writer.close();
 
-            // This exception could happen if the domain or the problem does not exist
+        // This exception could happen if the domain or the problem does not exist
         } catch (Throwable t) {
             t.printStackTrace();
         }
     }
 
-    // public void createMacroActions(ParsedMethod method, int idxFirstPrimitiveTask, int idxLastPrimitiveTask, DefaultParsedProblem parsedProblem) {
-
-    //     // Create the name of the macro action
-    //     String macroActionName = method.getName().getValue() + "_macro";
-
-    //     // Initialize the parameters, preconditions and effects of the macro action
-    //     ArrayList<TypedSymbol<String>> macroActionParameters = new ArrayList<TypedSymbol<String>>();
-    //     ArrayList<Expression<String>> macroActionPrecondition = new ArrayList<>();
-    //     ArrayList<Expression<String>> macroActionEffect = new ArrayList<>();
-
-    //     ArrayList<Expression<String>> worldState = new ArrayList<>();
-
-    //     for (Integer subtaskToAdd = idxFirstPrimitiveTask; subtaskToAdd <= idxLastPrimitiveTask; subtaskToAdd++) {
-
-    //         // Get the subtask
-    //         Expression<String> subtask = method.getSubTasks().getChildren().get(subtaskToAdd);
-
-    //         LOGGER.info("===========\n===========\nAdd subtask " + subtask + " to macro action " + macroActionName + "\n");
-
-    //         // Get a copy of the parsed action associated with this subtask
-    //         ParsedAction parsedAction = new ParsedAction(parsedActionNameToObj.get(subtask.getSymbol().getValue()));
-
-    //         // First, change all its parameters (in parameter field, precondition and effect) with the parameters of the macro action method.
-    //         // changeParametersActionWithParameterMethod(parsedAction, method.getName().getValue(), subtask.getArguments());
-
-    //         // Then iterate over all its preconditions
-    //         for (int i = 0; i < parsedAction.getPreconditions().getChildren().size(); i ++) {
-
-    //             Expression<String> precondition = parsedAction.getPreconditions().getChildren().get(i);
-
-    //             LOGGER.debug("===============\n");
-    //             LOGGER.debug("World state: " + worldState + "\n");
-    //             LOGGER.debug("Precondition macro action: " + macroActionPrecondition + "\n");
-    //             LOGGER.debug(macroActionName + " - Precondition: " + precondition + "\n");
-
-    //             // 4 cases here:
-    //             // - The precondition of the macro action contains the precondition and the world state contains the precondition => NOTHING TO DO
-    //             // - The precondition of the macro action does not contain the precondition and the world state contains the precondition => NOTHING TO DO: the precondition is always verified
-    //             // RESUME FIRST TWO CASES: If the world state contains the precondition, then it is always verified, so we do not need to add it to the macro action precondition
-
-    //             // - The precondition of the macro action contains the precondition and the world state does not contain the precondition (or contains the opposite of the precondition) => SHOULD BE IMPOSSIBLE: ERROR
-    //             // - The precondition of the macro action does not contain the precondition and the world state does not contain the precondition => ADD THE PRECONDITION TO THE MACRO ACTION PRECONDITION AND TO THE WORLD STATE
-
-    //             if (worldState.contains(precondition)) {
-    //                 // We can skip this precondition (will be always verified)
-    //                 LOGGER.debug("Skip this precondition (will be always verified)\n");
-    //                 continue;
-    //             }
-    //             else if (containsOppositeOf(precondition, worldState)) {
-    //                 // Error here: the precondition of the macro action contains the precondition and the world state contains the opposite of the precondition: this precondition will never be verified
-    //                 LOGGER.error("Error: the precondition of the macro action " + macroActionName + " contains the precondition " + precondition + " and the world state contains the opposite of the precondition: this precondition will never be verified\n");
-    //                 System.exit(1);
-    //             }
-    //             else {
-    //                 // Add the precondition into the macro action precondition (if not exists)
-    //                 if (!macroActionPrecondition.contains(precondition)) {
-    //                     macroActionPrecondition.add(precondition);
-    //                 }
-
-    //                 // Add it to the world state
-    //                 worldState.add(precondition);
-    //             }
-    //         }
-
-    //         // Now, iterate over all effects to update the world state
-    //         for (Expression<String> effect : parsedAction.getEffects().getChildren()) {
-                    
-    //                 LOGGER.debug("===============\n");
-    //                 LOGGER.debug("World state: " + worldState + "\n");
-    //                 LOGGER.debug(macroActionName + " - Effect: " + effect + "\n");
-    
-    
-    //                 if (worldState.contains(effect)) {
-    //                     // We can skip this effect (will be always verified)
-    //                     continue;
-    //                 }
-    //                 else if (containsOppositeOf(effect, worldState)) {
-    //                     // Remove this effect from the world state
-    //                     removeOppositeOf(effect, worldState);
-    //                 }
-    //                 // Add the effect into the world state
-    //                 worldState.add(effect);
-    //         }
-
-    //         int a = 0;
-    //     }
-
-    //     int a = 0;
-
-
-    // }
 
     /**
      * Create the macro actions for a given method. We use the following technique to create the macro actions:
@@ -343,8 +271,8 @@ public class Hydra {
             // Add the parameters, preconditions and effects to the macro action
             newMacroActionParameters = addParamsToMacro(macroActionParameters, parsedAction.getParameters());
             newMacroActionPreconditions = addPreToMacro(macroActionPreconditions, macroActionAddEffects, parsedAction.getPreconditions());
-            newMacroActionDelEffects = addDelToMacro(macroActionDelEffects, parsedAction.getEffects());
-            newMacroActionAddEffects = addAddToMacro(macroActionAddEffects, parsedAction.getEffects());
+            newMacroActionDelEffects = addDelEffsToMacro(macroActionDelEffects, parsedAction.getEffects());
+            newMacroActionAddEffects = addAddEffsToMacro(macroActionAddEffects, parsedAction.getEffects());
 
             // Update the macro action parameters, preconditions, add effects and del effects
             macroActionParameters = newMacroActionParameters;
@@ -378,16 +306,15 @@ public class Hydra {
             (not (at m1_serve__?t m1_serve__?p2)))
          * 
          * 
-         * We see that in the add effect, (at m1_serve__?t kitchen) is not usefull (already in the precondition, can be discarded)
+         * We see that in the add effect, (at m1_serve__?t kitchen) is not useful (already in the precondition, can be discarded)
          * More problematic, in the del effect, we have two artefacts:
-         * (not (ontray m1_serve__?s m1_serve__?t)) => not usefull, was already negative in the beginning, but how to prove that ?
+         * (not (ontray m1_serve__?s m1_serve__?t)) => not useful, was already negative in the beginning, but how to prove that ?
          * (not (at m1_serve__?t m1_serve__?p2))) => we have move the tray back to its original position, so this effect is not needed. But how to prove that ?
          */
 
 
         // Use a general function to remove the effects that are already in the precondition (function with general name to indicate that we remove all the element of the first list that are in the second list)
         // macroActionAddEffects = filterBy(macroActionAddEffects, macroActionPreconditions);
-        
 
         // Fusion the add and del effects
         Expression<String> macroActionEffects = new Expression<String>(macroActionAddEffects);
@@ -432,6 +359,7 @@ public class Hydra {
         }
 
         method.setSubTasks(newSubtasks);
+        int a = 0;
     }
 
 
@@ -588,7 +516,7 @@ public class Hydra {
      * @param macroActionDelEffects Del effects of the macro action
      * @param actionToAddAddAndDelEffects Del and Add effects of the action to add
      */
-    public Expression<String> addDelToMacro(Expression<String> macroActionDelEffects, Expression<String> actionToAddAddAndDelEffects) {
+    public Expression<String> addDelEffsToMacro(Expression<String> macroActionDelEffects, Expression<String> actionToAddAddAndDelEffects) {
 
         Expression<String> newMacroActionDelEffects = new Expression<String>(macroActionDelEffects);
 
@@ -641,7 +569,7 @@ public class Hydra {
      * @param macroActionAddEffects Add effects of the macro action
      * @param actionToAddAddAndDelEffects Del and Add effects of the action to add
      */
-    public Expression<String> addAddToMacro(Expression<String> macroActionAddEffects, Expression<String> actionToAddAddAndDelEffects) {
+    public Expression<String> addAddEffsToMacro(Expression<String> macroActionAddEffects, Expression<String> actionToAddAddAndDelEffects) {
 
         Expression<String> newMacroActionAddEffects = new Expression<String>(macroActionAddEffects);
 
